@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messagerie</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f0f4f9;--surface:#fff;--field:#e9eef6;--hover:#e3e9f2;--sel:#d3e3fd;--text:#1f1f1f;--muted:#5f6368;--line:#e3e6ea;--accent:#0b57d0;--accent-ink:#fff;--danger:#b3261e}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Roboto",Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  input{font:inherit}
+  #auth{max-width:360px;margin:10vh auto;background:var(--surface);padding:32px;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+  #auth h1{font-size:22px;font-weight:500;margin:0 0 20px}
+  #auth label{display:block;font-size:12px;color:var(--muted);margin:14px 0 4px}
+  #auth input{width:100%;height:44px;border:1px solid var(--muted);border-radius:8px;padding:0 12px}
+  #auth button.primary{width:100%;height:44px;background:var(--accent);color:#fff;border-radius:22px;margin-top:20px;font-weight:500}
+  #auth .switch{margin-top:16px;text-align:center;font-size:13px;color:var(--muted)}
+  #auth .switch button{color:var(--accent);font-weight:500}
+  #auth .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:16px}
+  #app{display:none;height:100%;grid-template-columns:300px 1fr}
+  #app.on{display:grid}
+  aside{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .me-bar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .me-bar .name{font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .me-bar button{color:var(--muted);font-size:12px}
+  .searchbox{padding:10px 14px}
+  .searchbox input{width:100%;height:38px;border:1px solid var(--line);border-radius:19px;padding:0 14px;background:var(--field)}
+  .results{padding:0 10px;max-height:160px;overflow-y:auto}
+  .row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px}
+  .row:hover{background:var(--hover)}
+  .row .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row button.act{background:var(--accent);color:#fff;font-size:12px;padding:6px 10px;border-radius:14px}
+  .av{width:32px;height:32px;border-radius:50%;background:var(--sel);display:grid;place-items:center;font-size:13px;font-weight:500;flex:none}
+  .sec-title{padding:14px 16px 4px;font-size:12px;color:var(--muted);font-weight:500}
+  .friends{flex:1;overflow-y:auto;padding:0 10px}
+  .friend{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:10px;text-align:left}
+  .friend:hover{background:var(--hover)}
+  .friend.on{background:var(--sel)}
+  .empty{color:var(--muted);font-size:13px;padding:8px 16px}
+  main{display:flex;flex-direction:column;min-width:0}
+  .chead{padding:16px;border-bottom:1px solid var(--line);font-weight:500;display:flex;align-items:center;gap:10px}
+  .msgs{flex:1;overflow-y:auto;padding:14px 20px;display:flex;flex-direction:column;gap:4px}
+  .bubble{max-width:60%;padding:9px 14px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word}
+  .bubble.mine{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+  .bubble.theirs{align-self:flex-start;background:var(--field);border-bottom-left-radius:4px}
+  .time{font-size:10px;color:var(--muted);margin:2px 4px 8px;align-self:flex-end}
+  .time.theirs{align-self:flex-start}
+  .composer{display:flex;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}
+  .composer input{flex:1;height:44px;border:1px solid var(--line);border-radius:22px;padding:0 16px;background:var(--field)}
+  .composer button{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700}
+  .blank{margin:auto;color:var(--muted);text-align:center;max-width:280px}
+</style>
+</head>
+<body>
+
+<div id="auth">
+  <h1 id="authTitle">Se connecter</h1>
+  <div id="usernameField" style="display:none">
+    <label for="username">Pseudo</label>
+    <input id="username" autocomplete="off" maxlength="20">
+  </div>
+  <label for="email">Adresse e-mail</label>
+  <input id="email" type="email" autocomplete="email">
+  <label for="password">Mot de passe</label>
+  <input id="password" type="password" autocomplete="current-password">
+  <button class="primary" id="authSubmit">Se connecter</button>
+  <div class="err" id="authErr"></div>
+  <div class="switch">
+    <span id="switchText">Pas encore de compte ?</span>
+    <button id="switchBtn">Créer un compte</button>
+  </div>
+</div>
+
+<div id="app">
+  <aside>
+    <div class="me-bar"><span class="av" id="meAv"></span><span class="name" id="meName"></span><button id="logout">Déconnexion</button></div>
+    <div class="searchbox"><input id="search" placeholder="Rechercher un pseudo…" autocomplete="off"></div>
+    <div class="results" id="results"></div>
+    <div class="sec-title">Demandes reçues</div>
+    <div id="requests"><p class="empty" id="requestsEmpty">Aucune demande</p></div>
+    <div class="sec-title">Amis</div>
+    <div class="friends" id="friends"></div>
+  </aside>
+  <main>
+    <div class="chead" id="chead" style="display:none"></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="composer" id="composer" style="display:none">
+      <input id="msgInput" placeholder="Écrire un message…" autocomplete="off">
+      <button id="msgSend">➤</button>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ==== CONFIGURATION : à remplacer par les valeurs de VOTRE projet Supabase ====
+// Réglages > API dans le tableau de bord Supabase
+const SUPABASE_URL = "https://VOTRE-PROJET.supabase.co";
+const SUPABASE_ANON_KEY = "VOTRE_CLE_ANON_PUBLIQUE";
+// ================================================================
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = (s) => document.querySelector(s);
+
+let mode = "login";
+let me = null; // { id, username }
+let friends = [];       // profils des amis acceptés
+let requestsIn = [];    // demandes reçues en attente
+let active = null;      // ami actuellement ouvert
+let msgChannel = null;
+let friendChannel = null;
+
+function initials(n){ return (n||"?").slice(0,2).toUpperCase(); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtTime(ts){ return new Date(ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+
+// ---------- Authentification ----------
+$("#switchBtn").addEventListener("click", () => {
+  mode = mode === "login" ? "signup" : "login";
+  $("#authTitle").textContent = mode === "login" ? "Se connecter" : "Créer un compte";
+  $("#authSubmit").textContent = mode === "login" ? "Se connecter" : "Créer le compte";
+  $("#usernameField").style.display = mode === "signup" ? "block" : "none";
+  $("#switchText").textContent = mode === "login" ? "Pas encore de compte ?" : "Déjà un compte ?";
+  $("#switchBtn").textContent = mode === "login" ? "Créer un compte" : "Se connecter";
+  $("#authErr").textContent = "";
+});
+
+$("#authSubmit").addEventListener("click", async () => {
+  const email = $("#email").value.trim();
+  const password = $("#password").value;
+  const username = $("#username").value.trim();
+  $("#authErr").textContent = "";
+  if (!email || !password || (mode === "signup" && !username)) {
+    $("#authErr").textContent = "Merci de remplir tous les champs.";
+    return;
+  }
+  $("#authSubmit").disabled = true;
+  try {
+    if (mode === "signup") {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      const uid = data.user && data.user.id;
+      if (uid) {
+        const { error: perr } = await sb.from("profiles").insert({ id: uid, username });
+        if (perr) throw perr;
+      } else {
+        $("#authErr").textContent = "Compte créé : vérifiez votre e-mail pour confirmer, puis connectez-vous.";
+        return;
+      }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+  } catch (e) {
+    $("#authErr").textContent = e.message === "User already registered"
+      ? "Ce compte existe déjà, connectez-vous."
+      : (e.code === "23505" ? "Ce pseudo est déjà pris." : e.message);
+  } finally {
+    $("#authSubmit").disabled = false;
+  }
+});
+
+$("#logout").addEventListener("click", async () => { await sb.auth.signOut(); });
+
+sb.auth.onAuthStateChange((_event, session) => {
+  if (session && session.user) startApp(session.user.id);
+  else showAuth();
+});
+
+function showAuth() {
+  $("#auth").style.display = "block";
+  $("#app").classList.remove("on");
+  if (msgChannel) sb.removeChannel(msgChannel);
+  if (friendChannel) sb.removeChannel(friendChannel);
+  me = null; friends = []; requestsIn = []; active = null;
+}
+
+async function startApp(uid) {
+  const { data: profile } = await sb.from("profiles").select("*").eq("id", uid).single();
+  if (!profile) { showAuth(); return; }
+  me = { id: profile.id, username: profile.username };
+  $("#auth").style.display = "none";
+  $("#app").classList.add("on");
+  $("#meAv").textContent = initials(me.username);
+  $("#meName").textContent = me.username;
+  await loadFriendData();
+  subscribeFriendChanges();
+}
+
+// ---------- Amis ----------
+async function loadFriendData() {
+  const { data } = await sb
+    .from("friendships")
+    .select("*")
+    .or(`requester_id.eq.${me.id},addressee_id.eq.${me.id}`);
+  const rows = data || [];
+  const accepted = rows.filter(r => r.status === "accepted");
+  const incoming = rows.filter(r => r.status === "pending" && r.addressee_id === me.id);
+
+  const otherIds = accepted.map(r => r.requester_id === me.id ? r.addressee_id : r.requester_id);
+  const reqIds = incoming.map(r => r.requester_id);
+  const allIds = Array.from(new Set(otherIds.concat(reqIds)));
+  let profilesById = {};
+  if (allIds.length) {
+    const { data: profs } = await sb.from("profiles").select("id,username").in("id", allIds);
+    (profs || []).forEach(p => profilesById[p.id] = p);
+  }
+  friends = otherIds.map(id => profilesById[id]).filter(Boolean);
+  requestsIn = incoming.map(r => ({ friendshipId: r.id, ...profilesById[r.requester_id] })).filter(p => p.id);
+  renderFriends(); renderRequests();
+}
+
+function renderFriends() {
+  const el = $("#friends");
+  if (!friends.length) { el.innerHTML = '<p class="empty">Cherchez un pseudo ci-dessus pour ajouter un ami.</p>'; return; }
+  el.innerHTML = friends.map(f =>
+    `<button class="friend${active && active.id===f.id ? ' on':''}" data-id="${f.id}">
+       <span class="av">${esc(initials(f.username))}</span><span>${esc(f.username)}</span>
+     </button>`).join("");
+  el.querySelectorAll(".friend").forEach(b => b.addEventListener("click", () => openChat(b.dataset.id)));
+}
+
+function renderRequests() {
+  const el = $("#requests");
+  if (!requestsIn.length) { el.innerHTML = '<p class="empty">Aucune demande</p>'; return; }
+  el.innerHTML = requestsIn.map(r =>
+    `<div class="row"><span class="av">${esc(initials(r.username))}</span><span class="n">${esc(r.username)}</span>
+     <button class="act" data-id="${r.friendshipId}">Accepter</button></div>`).join("");
+  el.querySelectorAll(".act").forEach(b => b.addEventListener("click", async () => {
+    await sb.from("friendships").update({ status: "accepted" }).eq("id", b.dataset.id);
+    await loadFriendData();
+  }));
+}
+
+let searchTimer = null;
+$("#search").addEventListener("input", (e) => {
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  if (!q) { $("#results").innerHTML = ""; return; }
+  searchTimer = setTimeout(async () => {
+    const { data } = await sb.from("profiles").select("id,username")
+      .ilike("username", `%${q}%`).neq("id", me.id).limit(8);
+    renderResults(data || []);
+  }, 250);
+});
+
+function renderResults(list) {
+  const el = $("#results");
+  const friendIds = new Set(friends.map(f => f.id));
+  if (!list.length) { el.innerHTML = ""; return; }
+  el.innerHTML = list.map(p => {
+    const already = friendIds.has(p.id);
+    return `<div class="row"><span class="av">${esc(initials(p.username))}</span><span class="n">${esc(p.username)}</span>
+      ${already ? '' : `<button class="act" data-id="${p.id}">Ajouter</button>`}</div>`;
+  }).join("");
+  el.querySelectorAll(".act").forEach(b => b.addEventListener("click", async () => {
+    b.disabled = true; b.textContent = "Envoyé";
+    await sb.from("friendships").insert({ requester_id: me.id, addressee_id: b.dataset.id });
+  }));
+}
+
+function subscribeFriendChanges() {
+  if (friendChannel) sb.removeChannel(friendChannel);
+  friendChannel = sb.channel("friendships-" + me.id)
+    .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, (payload) => {
+      const row = payload.new || payload.old;
+      if (row && (row.requester_id === me.id || row.addressee_id === me.id)) loadFriendData();
+    }).subscribe();
+}
+
+// ---------- Discussion ----------
+function openChat(friendId) {
+  active = friends.find(f => f.id === friendId);
+  if (!active) return;
+  renderFriends();
+  $("#chead").style.display = "flex";
+  $("#chead").innerHTML = `<span class="av">${esc(initials(active.username))}</span><span>${esc(active.username)}</span>`;
+  $("#composer").style.display = "flex";
+  loadMessages();
+  subscribeMessages();
+}
+
+async function loadMessages() {
+  const { data } = await sb.from("messages").select("*")
+    .or(`and(sender_id.eq.${me.id},receiver_id.eq.${active.id}),and(sender_id.eq.${active.id},receiver_id.eq.${me.id})`)
+    .order("created_at", { ascending: true }).limit(300);
+  renderMessages(data || []);
+}
+
+function renderMessages(list) {
+  const el = $("#msgs");
+  if (!list.length) { el.innerHTML = `<div class="blank">Aucun message avec ${esc(active.username)} pour l'instant. Écrivez-lui !</div>`; return; }
+  el.innerHTML = list.map(m => {
+    const mine = m.sender_id === me.id;
+    return `<div class="bubble ${mine?'mine':'theirs'}">${esc(m.content)}</div><div class="time ${mine?'':'theirs'}">${fmtTime(m.created_at)}</div>`;
+  }).join("");
+  el.scrollTop = el.scrollHeight;
+}
+
+function subscribeMessages() {
+  if (msgChannel) sb.removeChannel(msgChannel);
+  msgChannel = sb.channel("messages-" + me.id + "-" + active.id)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+      const m = payload.new;
+      const belongsToThisChat = active && (
+        (m.sender_id === me.id && m.receiver_id === active.id) ||
+        (m.sender_id === active.id && m.receiver_id === me.id)
+      );
+      if (belongsToThisChat) loadMessages();
+    }).subscribe();
+}
+
+async function sendMessage() {
+  const input = $("#msgInput");
+  const content = input.value.trim();
+  if (!content || !active) return;
+  input.value = "";
+  await sb.from("messages").insert({ sender_id: me.id, receiver_id: active.id, content });
+}
+$("#msgSend").addEventListener("click", sendMessage);
+$("#msgInput").addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
+</script>
+</body>
+</html>
