@@ -89,6 +89,17 @@
   .admin-row button{font-size:12px;padding:5px 10px;border-radius:12px;background:var(--field)}
   .admin-row button.unban{background:var(--sel);color:var(--accent)}
   .admin-row button.ban{background:#fbdada;color:#c62828}
+
+  /* Styles de bulles selon le modèle de téléphone choisi */
+  body[data-phone="ios"] .bubble{border-radius:18px}
+  body[data-phone="ios"] .bubble.mine{background:#0b84ff;border-bottom-right-radius:4px}
+  body[data-phone="ios"] .bubble.theirs{background:#e9e9eb;color:#000;border-bottom-left-radius:4px}
+  body[data-phone="ios"] .composer input{border-radius:20px}
+  body[data-phone="ios"] .composer button{background:#0b84ff}
+  body[data-phone="android"] .bubble{border-radius:6px}
+  body[data-phone="android"] .bubble.mine{background:#1a73e8;border-radius:18px 18px 4px 18px}
+  body[data-phone="android"] .bubble.theirs{background:#f1f3f4;color:#000;border-radius:18px 18px 18px 4px}
+  body[data-phone="android"] .composer button{background:#1a73e8}
 </style>
 </head>
 <body>
@@ -150,6 +161,37 @@
       <button class="swatch" data-theme="rouge" style="background:#c62828" aria-label="Rouge"></button>
       <button class="swatch" data-theme="jaune" style="background:#c9a400" aria-label="Jaune"></button>
     </div>
+    <h3>Modèle de téléphone</h3>
+    <p style="font-size:12px;color:var(--muted);margin:-4px 0 8px">Adapte le style des bulles de message à l'appli native de votre téléphone.</p>
+    <select id="phoneModel" style="width:100%;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--text);padding:0 10px;margin-bottom:6px">
+      <optgroup label="Aucun (style par défaut)"><option value="">Style par défaut</option></optgroup>
+      <optgroup label="Apple">
+        <option value="ios">iPhone 17 Pro Max</option>
+        <option value="ios">iPhone 17 Pro</option>
+        <option value="ios">iPhone 17</option>
+        <option value="ios">iPhone 16 Pro Max</option>
+        <option value="ios">iPhone 16</option>
+        <option value="ios">iPhone SE</option>
+      </optgroup>
+      <optgroup label="Google">
+        <option value="android">Google Pixel 10 Pro XL</option>
+        <option value="android">Google Pixel 10 Pro</option>
+        <option value="android">Google Pixel 10</option>
+        <option value="android">Google Pixel 9a</option>
+      </optgroup>
+      <optgroup label="Samsung">
+        <option value="android">Galaxy S25 Ultra</option>
+        <option value="android">Galaxy S25</option>
+        <option value="android">Galaxy Z Fold 6</option>
+        <option value="android">Galaxy A55</option>
+      </optgroup>
+      <optgroup label="Autres Android">
+        <option value="android">Xiaomi 15 Pro</option>
+        <option value="android">OnePlus 13</option>
+        <option value="android">Huawei Pura 70</option>
+      </optgroup>
+    </select>
+
     <h3>Compte</h3>
     <button class="plabel" id="btnAdminOpen" style="display:none">Panneau administrateur</button>
     <button class="plabel" id="btnLogout">Se déconnecter</button>
@@ -262,6 +304,8 @@ async function startApp(uid) {
   $("#meName").textContent = me.username;
   $("#btnAdminOpen").style.display = me.is_admin ? "block" : "none";
   applyTheme(localStorage.getItem("chat-theme") || "blanc");
+  applyPhone(localStorage.getItem("chat-phone") || "");
+  $("#phoneModel").value = localStorage.getItem("chat-phone") || "";
   await loadFriendData();
   subscribeFriendChanges();
 }
@@ -273,6 +317,14 @@ function applyTheme(name) {
   document.querySelectorAll("#themeSwatches .swatch").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === name));
 }
 document.querySelectorAll("#themeSwatches .swatch").forEach(b => b.addEventListener("click", () => applyTheme(b.dataset.theme)));
+
+// ---------- Modèle de téléphone ----------
+function applyPhone(kind) {
+  if (kind) document.body.setAttribute("data-phone", kind);
+  else document.body.removeAttribute("data-phone");
+  localStorage.setItem("chat-phone", kind || "");
+}
+$("#phoneModel").addEventListener("change", (e) => applyPhone(e.target.value));
 
 // ---------- Panneau paramètres ----------
 function openPanel(id) { $(id).classList.add("on"); }
