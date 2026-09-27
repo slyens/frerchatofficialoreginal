@@ -1,1 +1,26 @@
+-- Table de stockage clé-valeur pour Les Frérots (données "shared" seulement)
+create table if not exists public.kv_store (
+  k text primary key,
+  v jsonb not null,
+  updated_at timestamptz not null default now()
+);
 
+-- Active la sécurité au niveau des lignes
+alter table public.kv_store enable row level security;
+
+-- ⚠️ Cette app gère elle-même ses comptes (pas de Supabase Auth), donc on autorise
+-- la clé publique "anon" à lire/écrire toutes les lignes. C'est cohérent avec le
+-- reste du modèle de sécurité de l'app (déjà basé sur la confiance côté client),
+-- mais ça veut dire que n'importe qui connaissant l'URL + la clé publique peut lire
+-- ou modifier ces données. Ne mets rien de vraiment sensible dedans.
+create policy "public read" on public.kv_store
+  for select using (true);
+
+create policy "public write" on public.kv_store
+  for insert with check (true);
+
+create policy "public update" on public.kv_store
+  for update using (true);
+
+create policy "public delete" on public.kv_store
+  for delete using (true);
