@@ -76,6 +76,14 @@ Un lien « Panneau administrateur » apparaît alors dans vos paramètres, avec 
 - Voir les mots de passe : Supabase ne les stocke jamais en clair, personne ne peut les récupérer, même vous.
 - Se connecter instantanément au compte de quelqu'un d'autre : cela demanderait d'exposer une clé secrète dans le code du site, ce qui permettrait à n'importe qui de prendre le contrôle de tous les comptes. Si vous avez vraiment besoin de cette fonctionnalité, il faut un petit serveur séparé qui garde cette clé secrète — dites-le-moi si vous voulez que je vous l'écrive.
 
+## 8. Appels, notifications et messages vocaux
+
+**Messages vocaux** : cliquez sur 🎤 dans la zone de saisie pour démarrer l'enregistrement, cliquez à nouveau (⏹️) pour l'envoyer. Le navigateur demandera l'accès au micro la première fois.
+
+**Notifications** : dans Paramètres → « Activer les notifications », autorisez-les. Un message arrivé pendant que vous êtes sur un autre onglet ou une autre conversation déclenche une notification du navigateur. Limite : ça ne fonctionne que si le navigateur reste ouvert (même en arrière-plan) — pas si l'appli est complètement fermée.
+
+**Appels audio** : cliquez sur 📞 en haut d'une conversation pour appeler cet ami. Il reçoit une fenêtre d'appel entrant avec accepter/refuser. Limites : audio uniquement (pas de vidéo), et les deux personnes doivent avoir l'appli ouverte dans leur navigateur au même moment — ce n'est pas un vrai appel téléphonique qui sonne appli fermée.
+
 ## Limites à connaître
 
 - Les messages ne sont pas chiffrés de bout en bout (Supabase les stocke en clair, protégés par les règles d'accès qui limitent la lecture à l'expéditeur et au destinataire).

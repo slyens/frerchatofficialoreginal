@@ -8,7 +8,9 @@
 <style>
   :root{--bg:#f0f4f9;--surface:#fff;--field:#e9eef6;--hover:#e3e9f2;--sel:#d3e3fd;--text:#1f1f1f;--muted:#5f6368;--line:#e3e6ea;--accent:#0b57d0;--accent-ink:#fff;--danger:#b3261e}
   *{box-sizing:border-box}
-  body{margin:0;font-family:"Roboto",Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+  body{margin:0;font-family:"Roboto",Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:var(--fsize,14px)}
+  .msgs{font-size:1em}
+  .bubble{font-size:1em}
   button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
   input{font:inherit}
   #auth{max-width:360px;margin:10vh auto;background:var(--surface);padding:32px;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
@@ -144,10 +146,29 @@
       </div>
     </div>
     <div class="composer" id="composer" style="display:none">
+      <button id="micBtn" aria-label="Message vocal" style="width:44px;height:44px;border-radius:50%;color:var(--muted);flex:none">🎤</button>
       <input id="msgInput" placeholder="Écrire un message…" autocomplete="off">
       <button id="msgSend">➤</button>
     </div>
   </main>
+</div>
+
+<audio id="remoteAudio" autoplay></audio>
+
+<div id="callBar" style="display:none;position:fixed;top:0;left:0;right:0;background:#1e8e3e;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:40;font-size:13px">
+  <span id="callBarText" style="flex:1"></span>
+  <button id="callMute" style="color:#fff;padding:6px 12px;border-radius:14px;background:rgba(255,255,255,.2)">Couper le micro</button>
+  <button id="callHangup" style="color:#fff;padding:6px 12px;border-radius:14px;background:#c62828">Raccrocher</button>
+</div>
+
+<div id="incomingCall" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;align-items:center;justify-content:center">
+  <div style="background:var(--surface);color:var(--text);padding:28px;border-radius:20px;text-align:center;width:min(300px,90vw)">
+    <p id="incomingText" style="font-size:16px;margin:0 0 20px">Appel entrant…</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button id="declineCall" style="width:52px;height:52px;border-radius:50%;background:#c62828;color:#fff;font-size:22px">✕</button>
+      <button id="acceptCall" style="width:52px;height:52px;border-radius:50%;background:#1e8e3e;color:#fff;font-size:22px">✓</button>
+    </div>
+  </div>
 </div>
 
 <div id="settingsPanel" class="panel" aria-hidden="true">
@@ -192,6 +213,17 @@
       </optgroup>
     </select>
 
+    <h3>Taille du texte</h3>
+    <div class="swatches" id="sizeSwatches">
+      <button class="plabel" data-size="13px" style="width:auto;padding:8px 14px;font-size:12px" aria-pressed="false">Petit</button>
+      <button class="plabel" data-size="14px" style="width:auto;padding:8px 14px;font-size:14px" aria-pressed="false">Moyen</button>
+      <button class="plabel" data-size="17px" style="width:auto;padding:8px 14px;font-size:16px" aria-pressed="false">Grand</button>
+      <button class="plabel" data-size="20px" style="width:auto;padding:8px 14px;font-size:18px" aria-pressed="false">Très grand</button>
+    </div>
+
+    <h3>Notifications</h3>
+    <button class="plabel" id="btnNotif">Activer les notifications</button>
+
     <h3>Compte</h3>
     <button class="plabel" id="btnAdminOpen" style="display:none">Panneau administrateur</button>
     <button class="plabel" id="btnLogout">Se déconnecter</button>
@@ -217,6 +249,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IEx-noTkFkcntkvsHoLBlA_-oX2Q3jD";
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = (s) => document.querySelector(s);
+document.documentElement.style.setProperty("--fsize", localStorage.getItem("chat-size") || "14px");
 
 let mode = "login";
 let me = null; // { id, username }
@@ -306,6 +339,10 @@ async function startApp(uid) {
   applyTheme(localStorage.getItem("chat-theme") || "blanc");
   applyPhone(localStorage.getItem("chat-phone") || "");
   $("#phoneModel").value = localStorage.getItem("chat-phone") || "";
+  applySize(localStorage.getItem("chat-size") || "14px");
+  ensureNotifPermission();
+  subscribeInbox();
+  mySignalChannel();
   await loadFriendData();
   subscribeFriendChanges();
 }
@@ -325,6 +362,14 @@ function applyPhone(kind) {
   localStorage.setItem("chat-phone", kind || "");
 }
 $("#phoneModel").addEventListener("change", (e) => applyPhone(e.target.value));
+
+// ---------- Taille du texte ----------
+function applySize(px) {
+  document.documentElement.style.setProperty("--fsize", px);
+  localStorage.setItem("chat-size", px);
+  document.querySelectorAll("#sizeSwatches button").forEach(b => b.setAttribute("aria-pressed", b.dataset.size === px));
+}
+document.querySelectorAll("#sizeSwatches button").forEach(b => b.addEventListener("click", () => applySize(b.dataset.size)));
 
 // ---------- Panneau paramètres ----------
 function openPanel(id) { $(id).classList.add("on"); }
@@ -456,8 +501,9 @@ function openChat(friendId) {
   if (!active) return;
   renderFriends();
   $("#chead").style.display = "flex";
-  $("#chead").innerHTML = `<span class="av">${esc(initials(active.username))}</span><span style="flex:1">${esc(active.username)}</span><button id="wallBtn" aria-label="Fond d'écran" style="color:var(--muted);font-size:18px">🖼️</button>`;
+  $("#chead").innerHTML = `<span class="av">${esc(initials(active.username))}</span><span style="flex:1">${esc(active.username)}</span><button id="callBtn" aria-label="Appeler" style="color:var(--muted);font-size:18px;margin-right:4px">📞</button><button id="wallBtn" aria-label="Fond d'écran" style="color:var(--muted);font-size:18px">🖼️</button>`;
   $("#wallBtn").addEventListener("click", () => { renderWallSwatches(); openPanel("#wallPanel"); });
+  $("#callBtn").addEventListener("click", () => startCall(active.id));
   applyWallpaper();
   $("#composer").style.display = "flex";
   loadMessages();
@@ -476,7 +522,11 @@ function renderMessages(list) {
   if (!list.length) { el.innerHTML = `<div class="blank">Aucun message avec ${esc(active.username)} pour l'instant. Écrivez-lui !</div>`; return; }
   el.innerHTML = list.map(m => {
     const mine = m.sender_id === me.id;
-    return `<div class="bubble ${mine?'mine':'theirs'}">${esc(m.content)}</div><div class="time ${mine?'':'theirs'}">${fmtTime(m.created_at)}</div>`;
+    const isVoice = m.content.startsWith(VOICE_PREFIX);
+    const body = isVoice
+      ? `<audio controls src="${esc(m.content.slice(VOICE_PREFIX.length))}" style="max-width:220px;height:36px"></audio>`
+      : esc(m.content);
+    return `<div class="bubble ${mine?'mine':'theirs'}">${body}</div><div class="time ${mine?'':'theirs'}">${fmtTime(m.created_at)}</div>`;
   }).join("");
   el.scrollTop = el.scrollHeight;
 }
@@ -539,6 +589,143 @@ $("#wallFile").addEventListener("change", (e) => {
   const reader = new FileReader();
   reader.onload = () => { localStorage.setItem(wallKey(), reader.result); applyWallpaper(); closePanel("#wallPanel"); };
   reader.readAsDataURL(file);
+});
+
+// ---------- Messages vocaux ----------
+const VOICE_PREFIX = "🎤VOICE🎤";
+let recorder = null, recChunks = [];
+$("#micBtn").addEventListener("click", async () => {
+  if (recorder && recorder.state === "recording") { recorder.stop(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recChunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (e) => recChunks.push(e.data);
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      $("#micBtn").textContent = "🎤"; $("#micBtn").style.color = "var(--muted)";
+      const blob = new Blob(recChunks, { type: "audio/webm" });
+      const reader = new FileReader();
+      reader.onload = async () => {
+        if (!active) return;
+        await sb.from("messages").insert({ sender_id: me.id, receiver_id: active.id, content: VOICE_PREFIX + reader.result });
+      };
+      reader.readAsDataURL(blob);
+    };
+    recorder.start();
+    $("#micBtn").textContent = "⏹️"; $("#micBtn").style.color = "#c62828";
+  } catch (e) { alert("Micro indisponible : " + e.message); }
+});
+
+// ---------- Notifications ----------
+function ensureNotifPermission() {
+  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+}
+$("#btnNotif").addEventListener("click", async () => {
+  if (!("Notification" in window)) { alert("Ce navigateur ne gère pas les notifications."); return; }
+  const perm = await Notification.requestPermission();
+  alert(perm === "granted" ? "Notifications activées." : "Notifications refusées.");
+});
+function notify(title, body) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  if (document.hasFocus()) return;
+  try { new Notification(title, { body, icon: "" }); } catch (e) {}
+}
+
+function subscribeInbox() {
+  sb.channel("inbox-" + me.id)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, async (payload) => {
+      const m = payload.new;
+      if (m.receiver_id !== me.id) return;
+      const isOpenChat = active && active.id === m.sender_id && document.hasFocus();
+      if (isOpenChat) return;
+      const { data: p } = await sb.from("profiles").select("username").eq("id", m.sender_id).single();
+      const preview = m.content.startsWith(VOICE_PREFIX) ? "🎤 Message vocal" : m.content;
+      notify((p && p.username) || "Nouveau message", preview.slice(0, 120));
+    }).subscribe();
+}
+
+// ---------- Appels audio (WebRTC) ----------
+let pc = null, localStream = null, inCallWith = null, callChannel = null, ringingTimeout = null;
+const RTC_CONFIG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+function mySignalChannel() {
+  if (!callChannel) callChannel = sb.channel("call-" + me.id).on("broadcast", { event: "signal" }, (p) => handleSignal(p.payload)).subscribe();
+  return callChannel;
+}
+async function sendSignal(toId, msg) {
+  await sb.channel("call-" + toId).send({ type: "broadcast", event: "signal", payload: { ...msg, from: me.id } });
+}
+function newPeerConnection(remoteId) {
+  const conn = new RTCPeerConnection(RTC_CONFIG);
+  conn.onicecandidate = (e) => { if (e.candidate) sendSignal(remoteId, { kind: "candidate", candidate: e.candidate }); };
+  conn.ontrack = (e) => { $("#remoteAudio").srcObject = e.streams[0]; };
+  return conn;
+}
+async function startCall(friendId) {
+  if (pc) { alert("Un appel est déjà en cours."); return; }
+  try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { alert("Micro indisponible : " + e.message); return; }
+  inCallWith = friendId;
+  pc = newPeerConnection(friendId);
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await sendSignal(friendId, { kind: "offer", sdp: offer });
+  showCallBar("Appel vers " + (friends.find(f => f.id === friendId) || {}).username + "…");
+  ringingTimeout = setTimeout(() => { if (pc) endCall(true); }, 30000);
+}
+async function handleSignal(msg) {
+  if (msg.kind === "offer") {
+    if (pc) { await sendSignal(msg.from, { kind: "busy" }); return; }
+    inCallWith = msg.from;
+    pendingOffer = msg.sdp;
+    const p = await profilesFor([msg.from]);
+    $("#incomingText").textContent = "Appel de " + (p[0].name || p[0].username || "quelqu'un") + "…";
+    $("#incomingCall").style.display = "flex";
+  } else if (msg.kind === "answer") {
+    if (pc && inCallWith === msg.from) { clearTimeout(ringingTimeout); await pc.setRemoteDescription(msg.sdp); showCallBar("En appel…"); }
+  } else if (msg.kind === "candidate") {
+    if (pc && inCallWith === msg.from) { try { await pc.addIceCandidate(msg.candidate); } catch (e) {} }
+  } else if (msg.kind === "hangup" || msg.kind === "busy" || msg.kind === "decline") {
+    if (inCallWith === msg.from) endCall(msg.kind !== "hangup" ? false : true, msg.kind);
+  }
+}
+let pendingOffer = null;
+$("#acceptCall").addEventListener("click", async () => {
+  $("#incomingCall").style.display = "none";
+  try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { alert("Micro indisponible : " + e.message); inCallWith = null; return; }
+  pc = newPeerConnection(inCallWith);
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  await pc.setRemoteDescription(pendingOffer);
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  await sendSignal(inCallWith, { kind: "answer", sdp: answer });
+  showCallBar("En appel…");
+});
+$("#declineCall").addEventListener("click", () => {
+  $("#incomingCall").style.display = "none";
+  if (inCallWith) sendSignal(inCallWith, { kind: "decline" });
+  inCallWith = null; pendingOffer = null;
+});
+function showCallBar(text) { $("#callBar").style.display = "flex"; $("#callBarText").textContent = text; }
+function endCall(notifyOther) {
+  clearTimeout(ringingTimeout);
+  if (notifyOther && inCallWith) sendSignal(inCallWith, { kind: "hangup" });
+  if (pc) { pc.close(); pc = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  $("#remoteAudio").srcObject = null;
+  $("#callBar").style.display = "none";
+  inCallWith = null; pendingOffer = null;
+}
+$("#callHangup").addEventListener("click", () => endCall(true));
+let micMuted = false;
+$("#callMute").addEventListener("click", () => {
+  if (!localStream) return;
+  micMuted = !micMuted;
+  localStream.getAudioTracks().forEach(t => t.enabled = !micMuted);
+  $("#callMute").textContent = micMuted ? "Réactiver le micro" : "Couper le micro";
 });
 </script>
 </body>
