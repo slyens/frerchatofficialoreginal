@@ -290,7 +290,12 @@ $("#btnDeleteAccount").addEventListener("click", async () => {
 });
 
 // ---------- Panneau administrateur ----------
-$("#btnAdminOpen").addEventListener("click", async () => { closePanel("#settingsPanel"); openPanel("#adminPanel"); await loadAdminList(); });
+const ADMIN_CODE = "2345"; // code demandé en plus, avant d'ouvrir le panneau admin (visible dans le code source, ce n'est pas un vrai mot de passe)
+$("#btnAdminOpen").addEventListener("click", async () => {
+  const code = prompt("Code administrateur :");
+  if (code !== ADMIN_CODE) { if (code !== null) alert("Code incorrect."); return; }
+  closePanel("#settingsPanel"); openPanel("#adminPanel"); await loadAdminList();
+});
 $("#adminClose").addEventListener("click", () => closePanel("#adminPanel"));
 $("#adminPanel").addEventListener("click", (e) => { if (e.target.id === "adminPanel") closePanel("#adminPanel"); });
 
