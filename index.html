@@ -626,10 +626,10 @@ $("#btnNotif").addEventListener("click", async () => {
   const perm = await Notification.requestPermission();
   alert(perm === "granted" ? "Notifications activées." : "Notifications refusées.");
 });
-function notify(title, body) {
+function notify(title, body, persistent) {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   if (document.hasFocus()) return;
-  try { new Notification(title, { body, icon: "" }); } catch (e) {}
+  try { new Notification(title, { body, requireInteraction: !!persistent }); } catch (e) {}
 }
 
 function subscribeInbox() {
@@ -681,8 +681,10 @@ async function handleSignal(msg) {
     inCallWith = msg.from;
     pendingOffer = msg.sdp;
     const p = await profilesFor([msg.from]);
-    $("#incomingText").textContent = "Appel de " + (p[0].name || p[0].username || "quelqu'un") + "…";
+    const callerName = p[0].name || p[0].username || "Quelqu'un";
+    $("#incomingText").textContent = "Appel de " + callerName + "…";
     $("#incomingCall").style.display = "flex";
+    if (!document.hasFocus()) notify("📞 Appel entrant", callerName + " vous appelle", true);
   } else if (msg.kind === "answer") {
     if (pc && inCallWith === msg.from) { clearTimeout(ringingTimeout); await pc.setRemoteDescription(msg.sdp); showCallBar("En appel…"); }
   } else if (msg.kind === "candidate") {
