@@ -13,6 +13,10 @@ create table public.profiles (
 
 create unique index profiles_username_lower_idx on public.profiles(username_lower);
 
+-- Colonnes pour la modération : administrateur et compte banni
+alter table public.profiles add column is_admin boolean not null default false;
+alter table public.profiles add column banned boolean not null default false;
+
 -- Demandes / relations d'amitié entre deux utilisateurs
 create table public.friendships (
   id uuid primary key default gen_random_uuid(),
@@ -58,6 +62,11 @@ create policy "on modifie son propre profil"
   to authenticated
   using (auth.uid() = id);
 
+create policy "un administrateur peut modifier n'importe quel profil"
+  on public.profiles for update
+  to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
 -- Amitiés : visibles et gérables seulement par les deux personnes concernées
 create policy "voir ses propres relations"
   on public.friendships for select
@@ -93,3 +102,10 @@ create policy "envoyer un message en étant soi-même l'expéditeur"
 -- Active le temps réel sur les messages et les amitiés
 alter publication supabase_realtime add table public.messages;
 alter publication supabase_realtime add table public.friendships;
+
+-- ============================================================
+-- Pour vous désigner administrateur : créez d'abord votre compte
+-- normalement dans l'appli, PUIS exécutez la ligne suivante en
+-- remplaçant 'votre_pseudo' par le pseudo choisi à l'inscription.
+-- ============================================================
+-- update public.profiles set is_admin = true where username = 'votre_pseudo';

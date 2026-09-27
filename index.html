@@ -51,6 +51,44 @@
   .composer input{flex:1;height:44px;border:1px solid var(--line);border-radius:22px;padding:0 16px;background:var(--field)}
   .composer button{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700}
   .blank{margin:auto;color:var(--muted);text-align:center;max-width:280px}
+
+  /* Thèmes de couleur */
+  body[data-theme="blanc"]{--bg:#f0f4f9;--surface:#fff;--field:#e9eef6;--hover:#e3e9f2;--sel:#d3e3fd;--text:#1f1f1f;--muted:#5f6368;--line:#e3e6ea;--accent:#0b57d0;--accent-ink:#fff}
+  body[data-theme="noir"]{--bg:#121212;--surface:#1c1c1e;--field:#2a2a2c;--hover:#333335;--sel:#33415c;--text:#f0f0f0;--muted:#9a9a9d;--line:#333335;--accent:#5b9bf7;--accent-ink:#0b1a33}
+  body[data-theme="orange"]{--bg:#fff4ea;--surface:#fffaf5;--field:#ffe6cc;--hover:#ffdab3;--sel:#ffcf9e;--text:#3a2413;--muted:#8a6a4c;--line:#ffdcb0;--accent:#e8710a;--accent-ink:#fff}
+  body[data-theme="rouge"]{--bg:#fdeeee;--surface:#fff7f7;--field:#fbdada;--hover:#f8c7c7;--sel:#f5b3b3;--text:#3a1414;--muted:#8a5252;--line:#f5c9c9;--accent:#c62828;--accent-ink:#fff}
+  body[data-theme="jaune"]{--bg:#fffbe6;--surface:#fffef2;--field:#fff3b0;--hover:#ffec8a;--sel:#ffe45e;--text:#3a3410;--muted:#8a7d3a;--line:#ffe98a;--accent:#c9a400;--accent-ink:#2b2400}
+
+  /* Fond d'écran par conversation */
+  .msgs{background-size:cover;background-position:center}
+
+  /* Bouton et panneau paramètres */
+  #settingsBtn{width:36px;height:36px;border-radius:50%;color:var(--muted);display:grid;place-items:center}
+  #settingsBtn:hover{background:var(--hover)}
+  #settingsBtn svg{width:20px;height:20px}
+  .panel{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-start;justify-content:flex-end;z-index:20}
+  .panel.on{display:flex}
+  .panel-box{width:min(340px,90vw);height:100%;background:var(--surface);padding:20px;overflow-y:auto}
+  .panel-box h2{margin:0 0 18px;font-size:18px;font-weight:500;display:flex;align-items:center;justify-content:space-between}
+  .panel-box h3{font-size:13px;color:var(--muted);margin:18px 0 8px;font-weight:500}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap}
+  .swatch{width:36px;height:36px;border-radius:50%;border:2px solid var(--line)}
+  .swatch[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+  .plabel{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;margin-bottom:4px}
+  .plabel:hover{background:var(--hover)}
+  .plabel.danger{color:var(--danger)}
+  .wallswatches{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .wallswatch{width:40px;height:40px;border-radius:8px;border:2px solid var(--line);background-size:cover;background-position:center}
+  .wallswatch[aria-pressed="true"]{outline:2px solid var(--accent)}
+  .wallfile{font-size:12px;color:var(--muted)}
+  #adminBtn{color:var(--accent);font-weight:500}
+  .admin-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px}
+  .admin-row .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{font-size:10px;padding:2px 6px;border-radius:8px;background:var(--sel);color:var(--accent)}
+  .badge.banned{background:#fbdada;color:#c62828}
+  .admin-row button{font-size:12px;padding:5px 10px;border-radius:12px;background:var(--field)}
+  .admin-row button.unban{background:var(--sel);color:var(--accent)}
+  .admin-row button.ban{background:#fbdada;color:#c62828}
 </style>
 </head>
 <body>
@@ -75,7 +113,7 @@
 
 <div id="app">
   <aside>
-    <div class="me-bar"><span class="av" id="meAv"></span><span class="name" id="meName"></span><button id="logout">Déconnexion</button></div>
+    <div class="me-bar"><span class="av" id="meAv"></span><span class="name" id="meName"></span><button id="settingsBtn" aria-label="Paramètres"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.61l-1.92-3.32a.5.5 0 0 0-.59-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 14 2h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.59.22L2.78 8.48a.5.5 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.5.5 0 0 0-.12.61l1.92 3.32c.13.22.39.3.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.25.42.5.42H14c.25 0 .46-.18.5-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.09.49 0 .59-.22l1.92-3.32a.5.5 0 0 0-.12-.61zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button></div>
     <div class="searchbox"><input id="search" placeholder="Rechercher un pseudo…" autocomplete="off"></div>
     <div class="results" id="results"></div>
     <div class="sec-title">Demandes reçues</div>
@@ -86,6 +124,14 @@
   <main>
     <div class="chead" id="chead" style="display:none"></div>
     <div class="msgs" id="msgs"></div>
+    <div id="wallPanel" class="panel" aria-hidden="true">
+      <div class="panel-box" style="width:min(300px,90vw)">
+        <h2>Fond d'écran<button aria-label="Fermer" id="wallClose">✕</button></h2>
+        <div class="wallswatches" id="wallSwatches"></div>
+        <label class="wallfile">Ou choisissez une image sur votre appareil<br>
+          <input type="file" id="wallFile" accept="image/*"></label>
+      </div>
+    </div>
     <div class="composer" id="composer" style="display:none">
       <input id="msgInput" placeholder="Écrire un message…" autocomplete="off">
       <button id="msgSend">➤</button>
@@ -93,12 +139,38 @@
   </main>
 </div>
 
+<div id="settingsPanel" class="panel" aria-hidden="true">
+  <div class="panel-box">
+    <h2>Paramètres<button aria-label="Fermer" id="settingsClose">✕</button></h2>
+    <h3>Thème</h3>
+    <div class="swatches" id="themeSwatches">
+      <button class="swatch" data-theme="blanc" style="background:#f0f4f9" aria-label="Blanc"></button>
+      <button class="swatch" data-theme="noir" style="background:#121212" aria-label="Noir"></button>
+      <button class="swatch" data-theme="orange" style="background:#e8710a" aria-label="Orange"></button>
+      <button class="swatch" data-theme="rouge" style="background:#c62828" aria-label="Rouge"></button>
+      <button class="swatch" data-theme="jaune" style="background:#c9a400" aria-label="Jaune"></button>
+    </div>
+    <h3>Compte</h3>
+    <button class="plabel" id="btnAdminOpen" style="display:none">Panneau administrateur</button>
+    <button class="plabel" id="btnLogout">Se déconnecter</button>
+    <button class="plabel danger" id="btnDeleteAccount">Supprimer mon compte</button>
+  </div>
+</div>
+
+<div id="adminPanel" class="panel" aria-hidden="true">
+  <div class="panel-box" style="width:min(420px,92vw)">
+    <h2>Administration<button aria-label="Fermer" id="adminClose">✕</button></h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:-8px">Les mots de passe ne sont jamais accessibles, même ici — Supabase ne les stocke pas en clair.</p>
+    <div id="adminList"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // ==== CONFIGURATION : à remplacer par les valeurs de VOTRE projet Supabase ====
 // Réglages > API dans le tableau de bord Supabase
-const SUPABASE_URL = "https://VOTRE-PROJET.supabase.co";
-const SUPABASE_ANON_KEY = "VOTRE_CLE_ANON_PUBLIQUE";
+const SUPABASE_URL = "https://gorylawvkqbcyubiavrr.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_IEx-noTkFkcntkvsHoLBlA_-oX2Q3jD";
 // ================================================================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -162,8 +234,6 @@ $("#authSubmit").addEventListener("click", async () => {
   }
 });
 
-$("#logout").addEventListener("click", async () => { await sb.auth.signOut(); });
-
 sb.auth.onAuthStateChange((_event, session) => {
   if (session && session.user) startApp(session.user.id);
   else showAuth();
@@ -180,13 +250,66 @@ function showAuth() {
 async function startApp(uid) {
   const { data: profile } = await sb.from("profiles").select("*").eq("id", uid).single();
   if (!profile) { showAuth(); return; }
-  me = { id: profile.id, username: profile.username };
+  if (profile.banned) {
+    await sb.auth.signOut();
+    $("#authErr").textContent = "Ce compte a été banni.";
+    return;
+  }
+  me = { id: profile.id, username: profile.username, is_admin: !!profile.is_admin };
   $("#auth").style.display = "none";
   $("#app").classList.add("on");
   $("#meAv").textContent = initials(me.username);
   $("#meName").textContent = me.username;
+  $("#btnAdminOpen").style.display = me.is_admin ? "block" : "none";
+  applyTheme(localStorage.getItem("chat-theme") || "blanc");
   await loadFriendData();
   subscribeFriendChanges();
+}
+
+// ---------- Thèmes ----------
+function applyTheme(name) {
+  document.body.setAttribute("data-theme", name);
+  localStorage.setItem("chat-theme", name);
+  document.querySelectorAll("#themeSwatches .swatch").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === name));
+}
+document.querySelectorAll("#themeSwatches .swatch").forEach(b => b.addEventListener("click", () => applyTheme(b.dataset.theme)));
+
+// ---------- Panneau paramètres ----------
+function openPanel(id) { $(id).classList.add("on"); }
+function closePanel(id) { $(id).classList.remove("on"); }
+$("#settingsBtn").addEventListener("click", () => openPanel("#settingsPanel"));
+$("#settingsClose").addEventListener("click", () => closePanel("#settingsPanel"));
+$("#settingsPanel").addEventListener("click", (e) => { if (e.target.id === "settingsPanel") closePanel("#settingsPanel"); });
+$("#btnLogout").addEventListener("click", async () => { closePanel("#settingsPanel"); await sb.auth.signOut(); });
+$("#btnDeleteAccount").addEventListener("click", async () => {
+  if (!confirm("Supprimer définitivement votre compte, vos amis et vos messages ?")) return;
+  await sb.from("profiles").delete().eq("id", me.id);
+  closePanel("#settingsPanel");
+  await sb.auth.signOut();
+  alert("Votre profil, vos amis et vos messages ont été supprimés. (Pour supprimer aussi l'accès par e-mail/mot de passe, contactez l'administrateur du projet Supabase.)");
+});
+
+// ---------- Panneau administrateur ----------
+$("#btnAdminOpen").addEventListener("click", async () => { closePanel("#settingsPanel"); openPanel("#adminPanel"); await loadAdminList(); });
+$("#adminClose").addEventListener("click", () => closePanel("#adminPanel"));
+$("#adminPanel").addEventListener("click", (e) => { if (e.target.id === "adminPanel") closePanel("#adminPanel"); });
+
+async function loadAdminList() {
+  const { data } = await sb.from("profiles").select("id,username,banned,is_admin").order("username");
+  const el = $("#adminList");
+  if (!data || !data.length) { el.innerHTML = "<p class='empty'>Aucun utilisateur.</p>"; return; }
+  el.innerHTML = data.map(u => `
+    <div class="admin-row">
+      <span class="av">${esc(initials(u.username))}</span>
+      <span class="n">${esc(u.username)}${u.is_admin ? ' <span class="badge">admin</span>' : ''}</span>
+      ${u.banned ? '<span class="badge banned">banni</span>' : ''}
+      ${u.id === me.id ? '' : `<button class="${u.banned ? 'unban' : 'ban'}" data-id="${u.id}" data-banned="${u.banned}">${u.banned ? 'Débannir' : 'Bannir'}</button>`}
+    </div>`).join("");
+  el.querySelectorAll("button[data-id]").forEach(b => b.addEventListener("click", async () => {
+    const newBanned = b.dataset.banned !== "true";
+    await sb.from("profiles").update({ banned: newBanned }).eq("id", b.dataset.id);
+    loadAdminList();
+  }));
 }
 
 // ---------- Amis ----------
@@ -276,7 +399,9 @@ function openChat(friendId) {
   if (!active) return;
   renderFriends();
   $("#chead").style.display = "flex";
-  $("#chead").innerHTML = `<span class="av">${esc(initials(active.username))}</span><span>${esc(active.username)}</span>`;
+  $("#chead").innerHTML = `<span class="av">${esc(initials(active.username))}</span><span style="flex:1">${esc(active.username)}</span><button id="wallBtn" aria-label="Fond d'écran" style="color:var(--muted);font-size:18px">🖼️</button>`;
+  $("#wallBtn").addEventListener("click", () => { renderWallSwatches(); openPanel("#wallPanel"); });
+  applyWallpaper();
   $("#composer").style.display = "flex";
   loadMessages();
   subscribeMessages();
@@ -321,6 +446,43 @@ async function sendMessage() {
 }
 $("#msgSend").addEventListener("click", sendMessage);
 $("#msgInput").addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
+
+// ---------- Fonds d'écran par conversation ----------
+const WALL_PRESETS = [
+  { id: "none", css: "" },
+  { id: "bleu", css: "linear-gradient(160deg,#d3e3fd,#eef3fc)" },
+  { id: "vert", css: "linear-gradient(160deg,#d4f5df,#eefbf1)" },
+  { id: "rose", css: "linear-gradient(160deg,#fbd7e4,#fdeef3)" },
+  { id: "sable", css: "linear-gradient(160deg,#f5e6c8,#fbf5e6)" },
+  { id: "nuit", css: "linear-gradient(160deg,#1b2a4a,#0d1424)" },
+];
+function wallKey() { return "chat-wall-" + (active ? active.id : ""); }
+function applyWallpaper() {
+  const saved = localStorage.getItem(wallKey());
+  const el = $("#msgs");
+  if (!saved) { el.style.backgroundImage = ""; return; }
+  if (saved.startsWith("data:") || saved.startsWith("http")) el.style.backgroundImage = `url(${saved})`;
+  else { const p = WALL_PRESETS.find(w => w.id === saved); el.style.backgroundImage = p ? p.css : ""; }
+}
+function renderWallSwatches() {
+  const current = localStorage.getItem(wallKey()) || "none";
+  $("#wallSwatches").innerHTML = WALL_PRESETS.map(w =>
+    `<button class="wallswatch" data-id="${w.id}" style="background:${w.css || 'var(--field)'}" aria-pressed="${current === w.id}" aria-label="${w.id}"></button>`
+  ).join("");
+  $("#wallSwatches").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    if (b.dataset.id === "none") localStorage.removeItem(wallKey());
+    else localStorage.setItem(wallKey(), b.dataset.id);
+    applyWallpaper(); renderWallSwatches();
+  }));
+}
+$("#wallClose").addEventListener("click", () => closePanel("#wallPanel"));
+$("#wallPanel").addEventListener("click", (e) => { if (e.target.id === "wallPanel") closePanel("#wallPanel"); });
+$("#wallFile").addEventListener("change", (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { localStorage.setItem(wallKey(), reader.result); applyWallpaper(); closePanel("#wallPanel"); };
+  reader.readAsDataURL(file);
+});
 </script>
 </body>
 </html>

@@ -55,6 +55,27 @@ C'est ce lien que vous partagez à vos amis — chacun y crée son propre compte
 3. L'autre personne voit la demande dans « Demandes reçues » et clique « Accepter ».
 4. Une fois amis, on clique sur son nom dans la liste pour discuter — les messages arrivent en direct des deux côtés.
 
+## 7. Nouvelles fonctionnalités
+
+**Paramètres** (icône ⚙️ à côté de votre nom) :
+- Changer de thème : blanc, noir, orange, rouge, jaune (mémorisé sur cet appareil).
+- Se déconnecter.
+- Supprimer son compte (supprime le profil, les amis et les messages liés — voir limite ci-dessous).
+
+**Fond d'écran par conversation** : dans une discussion, cliquez sur l'icône 🖼️ en haut à droite pour choisir une couleur ou importer une image depuis votre appareil (mémorisé sur cet appareil, pour cette conversation).
+
+**Devenir administrateur** : créez d'abord votre compte normalement dans l'appli, puis dans Supabase → SQL Editor, exécutez (en remplaçant par votre pseudo) :
+```sql
+update public.profiles set is_admin = true where username = 'votre_pseudo';
+```
+Un lien « Panneau administrateur » apparaît alors dans vos paramètres, avec :
+- La liste de tous les comptes (pseudo, statut administrateur, banni ou non).
+- Un bouton pour bannir / débannir un compte (un compte banni est déconnecté et ne peut plus se reconnecter).
+
+**Ce que le panneau administrateur ne peut pas faire, volontairement :**
+- Voir les mots de passe : Supabase ne les stocke jamais en clair, personne ne peut les récupérer, même vous.
+- Se connecter instantanément au compte de quelqu'un d'autre : cela demanderait d'exposer une clé secrète dans le code du site, ce qui permettrait à n'importe qui de prendre le contrôle de tous les comptes. Si vous avez vraiment besoin de cette fonctionnalité, il faut un petit serveur séparé qui garde cette clé secrète — dites-le-moi si vous voulez que je vous l'écrive.
+
 ## Limites à connaître
 
 - Les messages ne sont pas chiffrés de bout en bout (Supabase les stocke en clair, protégés par les règles d'accès qui limitent la lecture à l'expéditeur et au destinataire).
